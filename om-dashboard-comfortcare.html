@@ -257,15 +257,15 @@ function setLoad(m,p,s){
 }
 
 async function crFetch(path, qs){
-  var url = 'https://api.callrail.com/v3/' + path;
-  if(qs){
-    var params = Object.keys(qs).map(function(k){
-      return encodeURIComponent(k) + '=' + encodeURIComponent(qs[k]);
-    }).join('&');
-    url += '?' + params;
-  }
-  var r = await fetch(url, {headers:{Authorization:'Token token=' + CR_KEY}});
-  if(!r.ok) throw new Error('CallRail ' + r.status + ': ' + (await r.text()).slice(0,200));
+  // Routed through /api/callrail (Vercel serverless proxy) to avoid browser CORS
+  // restrictions when calling api.callrail.com from a hosted domain.
+  var params = Object.assign({ path: path }, qs || {});
+  var q = Object.keys(params).map(function(k){
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  var url = '/api/callrail?' + q;
+  var r = await fetch(url);
+  if(!r.ok) throw new Error('CallRail proxy ' + r.status + ': ' + (await r.text()).slice(0,200));
   return r.json();
 }
 
