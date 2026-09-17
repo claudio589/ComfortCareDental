@@ -3,9 +3,9 @@
 // The CallRail key lives here as an env var, never shipped to the browser.
 
 export default async function handler(req, res) {
-  const CR_KEY = process.env.CALLRAIL_API_KEY;
+  const CR_KEY = process.env.CALLRAIL_TOKEN || process.env.CALLRAIL_API_KEY;
   if (!CR_KEY) {
-    return res.status(500).json({ error: 'CALLRAIL_API_KEY not set in Vercel env vars' });
+    return res.status(500).json({ error: 'CALLRAIL_TOKEN not set in Vercel env vars' });
   }
 
   const { path, ...query } = req.query;
