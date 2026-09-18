@@ -276,33 +276,7 @@ async function crFetch(path, qs){
 // INVALID (cause 400): summary,caller_name,transcription,direction
 // DATE PARAMS: start_date / end_date  (NOT date_range[start])
 
-async function loadCalls(){
-  var from = document.getElementById('dateFrom').value;
-  var to   = document.getElementById('dateTo').value;
-  setLoad('Fetching calls...', 30, COMPANY_NAME + ' · Google Ads + LSA');
-  var data = await crFetch('a/' + ACCOUNT_ID + '/calls.json', {
-    company_id: COMPANY_ID,
-    start_date: from, end_date: to,
-    per_page: 250, sort: 'start_time', order: 'desc',
-    fields: 'answered,call_type,duration,start_time,customer_name,customer_phone_number,customer_city,customer_state,first_call,source_name,note,voicemail,lead_explanation,lead_score,recording'
-  });
-  var all = data.calls || [];
-  // Filter to Google sources only
-  calls = all.filter(function(c){
-    var sn = (c.source_name || '').toLowerCase();
-    // Exclude organic Google My Business / GBP calls
-    if (sn.indexOf('my business') > -1 || sn.indexOf('gmb') > -1) return false;
-    // Include paid: LSA, Google Ads, and PPC website pools
-    return sn.indexOf('local service') > -1
-        || sn.indexOf('google ads') > -1
-        || sn.indexOf('search ppc') > -1
-        || sn.indexOf('paid search') > -1;
-  });
-  // Map lead_explanation -> _txt (primary content for analysis)
-  calls.forEach(function(c){ c._txt = c.lead_explanation || c.note || ''; });
-  setLoad(calls.length + ' Google calls loaded', 80, from + ' → ' + to);
-  document.getElementById('ts').textContent = calls.length + ' calls · ' + from + ' → ' + to;
-}
+async function loadCalls(){ var from = document.getElementById('dateFrom').value; var to = document.getElementById('dateTo').value; setLoad('Fetching calls...', 30, COMPANY_NAME + ' · Google Ads + LSA'); var all = [], page = 1, totalPages = 1; do { var data = await crFetch('a/' + ACCOUNT_ID + '/calls.json', { company_id: COMPANY_ID, start_date: from, end_date: to, per_page: 250, page: page, sort: 'start_time', order: 'desc', fields: 'answered,call_type,duration,start_time,customer_name,customer_phone_number,customer_city,customer_state,first_call,source,source_name,note,voicemail,lead_explanation,lead_score,recording' }); all = all.concat(data.calls || []); totalPages = data.total_pages || 1; setLoad('Fetching calls... (page ' + page + '/' + totalPages + ')', Math.min(70, 30 + page*10), COMPANY_NAME + ' · Google Ads + LSA'); page++; } while (page <= totalPages); calls = all.filter(function(c){ return c.source === 'Google Ads' || c.source === 'Google Local Services Ads'; }); calls.forEach(function(c){ c._txt = c.lead_explanation || c.note || ''; }); setLoad(calls.length + ' Google calls loaded', 80, from + ' → ' + to); document.getElementById('ts').textContent = calls.length + ' calls · ' + from + ' → ' + to; }
 
 // ── LOCATION SWITCHING ────────────────────────────────────────────────────────
 function applyLocTheme(key){
@@ -854,7 +828,7 @@ async function analyzeOne(id){
 function sc(s){ return s>=75?'#1D9E75':s>=55?'#BA7517':'#E24B4A'; }
 function pct(a,b){ return b?Math.round(a/b*100):0; }
 function fmt(s){ return Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s'; }
-function isLSA(c){ return (c.source_name||'').toLowerCase().includes('local service'); }
+function isLSA(c){ return c.source === 'Google Local Services Ads'; }
 function ai(){ return calls.map(function(c){ return cache[c.id]; }).filter(Boolean); }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -1363,3 +1337,4 @@ window.addEventListener('DOMContentLoaded', async function(){
 </script>
 </body>
 </html>
+TESTBRACKET(){["'`
